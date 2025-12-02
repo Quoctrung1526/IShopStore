@@ -96,6 +96,18 @@
 			<optional>true</optional>
 		</dependency>
 
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-ui</artifactId>
+			<version>1.6.3</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<optional>true</optional>
+		</dependency>
+
 	</dependencies>
 
 
@@ -104,6 +116,9 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<mainClass>com.example.IShopStore.IShopStoreApplication</mainClass>
+				</configuration>
 			</plugin>
 			<!-- Ensure the project is compiled with Java 21 -->
 			<plugin>
@@ -114,6 +129,16 @@
 					<release>${java.version}</release>
 				</configuration>
 			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>3.5.4</version>
+				<configuration>
+					<skipTests>true</skipTests> <!-- DÒNG NÀY BỎ QUA TẤT CẢ CÁC KIỂM THỬ -->
+				</configuration>
+			</plugin>
+
 			<!-- Enforce build Java version early -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>

@@ -1,5 +1,7 @@
 package com.example.IShopStore.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -18,10 +20,12 @@ public class OrderDetail {
     private long quantity;
     private double price;
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "order_id")
     private Order order;
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "product_id")
     private Product product;

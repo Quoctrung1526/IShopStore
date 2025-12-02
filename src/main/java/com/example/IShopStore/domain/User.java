@@ -2,7 +2,10 @@ package com.example.IShopStore.domain;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -25,10 +28,12 @@ public class User {
     private String phone;
     private String avatar;
 
-    @ManyToOne
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id")
     private Role role;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "user")
     private List<Order> orders;
 

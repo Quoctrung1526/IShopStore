@@ -5,9 +5,12 @@ import org.springframework.stereotype.Repository;
 
 import com.example.IShopStore.domain.Role;
 
+import java.util.Optional; // Cần import
+
 @Repository
 public interface RoleRepository extends JpaRepository<Role, Long> {
 
-    Role findByName(String name);
+    // Đã sửa để trả về Optional<Role>
+    Optional<Role> findByName(String name);
 
 }

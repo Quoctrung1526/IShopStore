@@ -8,88 +8,130 @@
             <li class="breadcrumb-item active">Người dùng</li>
         </ol>
 
-        <div class="card">
-            <div class="card-header">
-                <i class="fas fa-users me-1"></i>
-                Danh sách người dùng
-            </div>
-            <div class="card-body">
-                <button class="btn btn-primary mb-3" @click="goToAddUser">
+        <div v-if="loading" class="text-center p-5">
+            <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+            <p class="mt-2 text-muted">Đang tải danh sách người dùng...</p>
+        </div>
+
+        <div v-else-if="error" class="alert alert-danger" role="alert">
+            <h4 class="alert-heading">Lỗi tải dữ liệu!</h4>
+            <p>{{ error }}</p>
+            <button @click="fetchUsers" class="btn btn-sm btn-outline-danger">
+                <i class="fas fa-redo me-1"></i> Tải lại
+            </button>
+        </div>
+
+        <div v-else class="card mb-4 shadow-sm">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-users me-1"></i> Danh sách người dùng ({{ users.length }} người)</span>
+                <button class="btn btn-sm btn-primary" @click="goToAddUser">
                     <i class="fas fa-plus"></i> Thêm người dùng
                 </button>
-                <table class="table table-bordered table-striped table-hover">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>ID</th>
-                            <th>Tên</th>
-                            <th>Email</th>
-                            <th>Vai trò</th>
-                            <th>Hành động</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="user in users" :key="user.id">
-                            <td>{{ user.id }}</td>
-                            <td>{{ user.name }}</td>
-                            <td>{{ user.email }}</td>
-                            <td>
-                                <span class="badge" :class="user.role === 'Admin' ? 'bg-danger' : 'bg-secondary'">
-                                    {{ user.role }}
-                                </span>
-                            </td>
-                            <td>
-                                <button class="btn btn-sm btn-info me-1" title="Xem">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button class="btn btn-sm btn-warning me-1" title="Sửa">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-sm btn-danger" title="Xóa">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            </div>
+
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>ID</th>
+                                <th>Tên</th>
+                                <th>Email</th>
+                                <th>Vai trò</th>
+                                <th>Avatar</th>
+                                <th style="width: 150px;">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="user in users" :key="user.id">
+                                <td>{{ user.id }}</td>
+                                <td>{{ user.fullName }}</td>
+                                <td>{{ user.email }}</td>
+                                <td>
+                                    <!-- ĐÃ SỬA: Truy cập user.role.name và sử dụng nó cho class -->
+                                    <span v-if="user.role" class="badge"
+                                        :class="user.role.name === 'ADMIN' ? 'bg-danger' : 'bg-secondary'">
+                                        {{ user.role.name }}
+                                    </span>
+                                    <span v-else class="badge bg-warning">N/A</span>
+                                </td>
+                                <td>
+                                    <img :src="user.avatarUrl ? user.avatarUrl : 'https://placehold.co/30x30/CCCCCC/FFFFFF/png?text=A'"
+                                        alt="Avatar" class="rounded-circle"
+                                        style="width: 30px; height: 30px; object-fit: cover;">
+                                </td>
+                                <td>
+                                    <!-- Nút Xem Chi tiết -->
+                                    <router-link :to="{ name: 'DetailUser', params: { id: user.id } }"
+                                        class="btn btn-sm btn-info me-1" title="Xem chi tiết">
+                                        <i class="fas fa-eye"></i>
+                                    </router-link>
+
+                                    <!-- Nút Sửa -->
+                                    <router-link :to="{ name: 'UpdateUser', params: { id: user.id } }"
+                                        class="btn btn-sm btn-warning me-1" title="Sửa thông tin">
+                                        <i class="fas fa-edit"></i>
+                                    </router-link>
+
+                                    <!-- Nút Xóa -->
+                                    <router-link :to="{ name: 'DeleteUser', params: { id: user.id } }"
+                                        class="btn btn-sm btn-danger" title="Xóa người dùng">
+                                        <i class="fas fa-trash"></i>
+                                    </router-link>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 </template>
 
-<script>
-export default {
-    name: 'Users',
-    data() {
-        return {
-            users: [
-                { id: 1, name: 'Nguyễn Văn A', email: 'nva@example.com', role: 'Admin' },
-                { id: 2, name: 'Trần Thị B', email: 'ttb@example.com', role: 'User' },
-                { id: 3, name: 'Lê Văn C', email: 'lvc@example.com', role: 'User' },
-                { id: 4, name: 'Phạm Thị D', email: 'ptd@example.com', role: 'User' },
-                { id: 5, name: 'Hoàng Văn E', email: 'hve@example.com', role: 'User' }
-            ]
-        }
-    },
-    mounted() {
-        this.loadExternalScripts()
-    },
-    methods: {
-        loadExternalScripts() {
-            if (!document.querySelector('link[href*="bootstrap"]')) {
-                const bootstrap = document.createElement('link')
-                bootstrap.rel = 'stylesheet'
-                bootstrap.href = 'https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css'
-                document.head.appendChild(bootstrap)
-            }
-            if (!document.querySelector('script[src*="fontawesome"]')) {
-                const fontawesome = document.createElement('script')
-                fontawesome.src = 'https://use.fontawesome.com/releases/v6.3.0/js/all.js'
-                document.head.appendChild(fontawesome)
-            }
-        },
-        goToAddUser() {
-            this.$router.push('/admin/users/createuser');
-        }
+<script setup>
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import axios from 'axios';
+
+const router = useRouter();
+
+// Lấy API Base URL từ .env file (đã cấu hình để dùng proxy)
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+
+// State
+const users = ref([]);
+const loading = ref(true);
+const error = ref(null);
+
+// Methods
+const fetchUsers = async () => {
+    loading.value = true;
+    error.value = null;
+    try {
+        // Gọi API: /api/users (Vite Proxy chuyển hướng đến 9090)
+        const response = await axios.get(`${API_BASE_URL}/api/users`);
+        users.value = response.data;
+    } catch (err) {
+        // Tối ưu hóa xử lý lỗi: cố gắng lấy thông báo lỗi từ Back-end
+        const errorMessage =
+            err.response?.data?.message ||
+            `Lỗi HTTP: ${err.response?.status} - ${err.message}` ||
+            'Không thể kết nối đến API Back-end. Vui lòng kiểm tra server.';
+
+        error.value = errorMessage;
+        console.error('Error fetching users:', err);
+    } finally {
+        loading.value = false;
     }
-}
+};
+
+const goToAddUser = () => {
+    router.push({ name: 'CreateUser' });
+};
+
+// Lifecycle Hook
+onMounted(() => {
+    fetchUsers();
+});
+
 </script>

@@ -1,114 +1,143 @@
 package com.example.IShopStore.controller.admin;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.example.IShopStore.domain.User;
+import com.example.IShopStore.service.UserService;
+import com.example.IShopStore.service.UploadService; // Giả định service này tồn tại
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
+
 import java.util.List;
 
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Controller;
-import com.example.IShopStore.domain.User;
-import com.example.IShopStore.service.UploadService;
-import com.example.IShopStore.service.UserService;
-import org.springframework.ui.Model;
-
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.bind.annotation.GetMapping;
-
-@Controller
+// Đổi từ @Controller sang @RestController để trả về JSON
+@RestController
+@RequestMapping("/api/users")
 public class UserController {
 
     private final UserService userService;
     private final UploadService uploadService;
     private final PasswordEncoder passwordEncoder;
+    private final ObjectMapper objectMapper; // Cần thiết để xử lý JSON trong Multipart
 
     public UserController(UploadService uploadService,
             UserService userService,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            ObjectMapper objectMapper) {
         this.userService = userService;
         this.uploadService = uploadService;
         this.passwordEncoder = passwordEncoder;
-
+        this.objectMapper = objectMapper;
     }
 
-    @RequestMapping("/") // GET
-    public String getHomePage(Model model) {
-        List<User> arrUsers = this.userService.getAllUsers();
-        System.out.println(arrUsers);
-        model.addAttribute("eric", "test");
-        return "hello";
-    }
-
-    @RequestMapping("/admin/user") // GET
-    public String getUserPage(Model model) {
+    // -----------------------------------------------------
+    // 1. GET /api/users: Danh sách người dùng (UserList)
+    // -----------------------------------------------------
+    @GetMapping
+    public ResponseEntity<List<User>> getAllUsers() {
         List<User> users = this.userService.getAllUsers();
-        model.addAttribute("users", users);
-
-        return "admin/user/show";
+        return ResponseEntity.ok(users);
     }
 
-    @RequestMapping("/admin/user/{id}") // GET
-    public String getUserDetailPage(Model model, @PathVariable long id) {
-        User user = this.userService.getUserById(id);
-        model.addAttribute("user", user);
-        model.addAttribute("id", id);
-        return "admin/user/detail";
+    // -----------------------------------------------------
+    // 2. GET /api/users/{id}: Chi tiết người dùng (DetailUser)
+    // -----------------------------------------------------
+    @GetMapping("/{id}")
+    public ResponseEntity<User> getUserDetail(@PathVariable Long id) {
+        User user = this.userService.getUserById(id); // Giả định service ném 404 nếu không tìm thấy
+        return ResponseEntity.ok(user);
     }
 
-    @RequestMapping("/admin/user/update/{id}") // GET
-    public String getUpdateUserPage(Model model, @PathVariable long id) {
-        User currentUser = this.userService.getUserById(id);
-        model.addAttribute("newUser", currentUser);
-        return "admin/user/update";
-    }
+    // -----------------------------------------------------
+    // 3. POST /api/users: Thêm người dùng (CreateUser)
+    // Front-end gửi: MultipartForm (user: JSON, avatar: File)
+    // -----------------------------------------------------
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<User> createUser(
+            @RequestPart("user") String userJson,
+            @RequestPart(value = "avatar", required = false) MultipartFile file) {
+        try {
+            User user = objectMapper.readValue(userJson, User.class);
 
-    @PostMapping("/admin/user/update")
-    public String postUpdateUser(Model model, @ModelAttribute("newUser") User user) {
-        User currentUser = this.userService.getUserById(user.getId());
-        if (currentUser != null) {
-            currentUser.setfullName(user.getfullName());
-            currentUser.setPhone(user.getPhone());
-            currentUser.setAddress(user.getAddress());
-            this.userService.handleSaveUser(currentUser);
+            // Xử lý File Upload
+            if (file != null && !file.isEmpty()) {
+                String avatarUrl = this.uploadService.handleSaveUploadFile(file, "avatar");
+                user.setAvatar(avatarUrl);
+            }
+
+            // Mã hóa mật khẩu
+            String hashPassword = this.passwordEncoder.encode(user.getPassword());
+            user.setPassword(hashPassword);
+
+            // Giả định role được xử lý đúng cách trong service hoặc đã có trong payload
+            // user.setRole(this.userService.getRoleByName(user.getRole().getName()));
+
+            User savedUser = this.userService.handleSaveUser(user);
+            return new ResponseEntity<>(savedUser, HttpStatus.CREATED); // Trả về 201 Created
+        } catch (Exception e) {
+            // Xử lý lỗi JSON parsing hoặc lỗi nghiệp vụ từ service (ví dụ: Email đã tồn
+            // tại)
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Lỗi khi tạo người dùng: " + e.getMessage());
         }
-        return "redirect:/admin/user";
     }
 
-    @RequestMapping("/admin/user/create") // GET
-    public String getCreateUserPage(Model model) {
-        model.addAttribute("newUser", new User());
-        return "admin/user/create";
+    // -----------------------------------------------------
+    // 4. PUT /api/users/{id}: Cập nhật người dùng (UpdateUser)
+    // Front-end gửi: MultipartForm (user: JSON, avatar: File)
+    // -----------------------------------------------------
+    @PutMapping("/{id}")
+    public ResponseEntity<User> updateUser(
+            @PathVariable Long id,
+            @RequestPart("user") String userJson,
+            @RequestPart(value = "avatar", required = false) MultipartFile file) {
+        try {
+            User userUpdate = objectMapper.readValue(userJson, User.class);
+
+            if (!id.equals(userUpdate.getId())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID người dùng không khớp với đường dẫn.");
+            }
+
+            User currentUser = this.userService.getUserById(id);
+
+            // Cập nhật thông tin cơ bản
+            currentUser.setfullName(userUpdate.getfullName());
+            currentUser.setPhone(userUpdate.getPhone());
+            currentUser.setAddress(userUpdate.getAddress());
+            currentUser.setRole(userUpdate.getRole()); // Cập nhật role
+
+            // Cập nhật mật khẩu (nếu có)
+            if (userUpdate.getPassword() != null && !userUpdate.getPassword().isEmpty()) {
+                String hashPassword = this.passwordEncoder.encode(userUpdate.getPassword());
+                currentUser.setPassword(hashPassword);
+            }
+
+            // Xử lý File Avatar
+            if (file != null && !file.isEmpty()) {
+                // Giả định service handleSaveUploadFile xử lý xóa file cũ nếu cần
+                String avatarUrl = this.uploadService.handleSaveUploadFile(file, "avatar");
+                currentUser.setAvatar(avatarUrl);
+            }
+
+            User updatedUser = this.userService.handleSaveUser(currentUser);
+            return ResponseEntity.ok(updatedUser);
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Lỗi khi cập nhật người dùng: " + e.getMessage());
+        }
     }
 
-    @PostMapping(value = "/admin/user/create") // POST
-    public String createUserPage(Model model, @ModelAttribute("newUser") User user,
-            @RequestParam("ishopstoreFile") MultipartFile file) {
-        String avatar = this.uploadService.handleSaveUploadFile(file, "avatar");
-        String hashPassword = this.passwordEncoder.encode(user.getPassword());
-
-        user.setAvatar(avatar);
-        user.setPassword(hashPassword);
-        user.setRole(this.userService.getRoleByName(user.getRole().getName()));
-
-        this.userService.handleSaveUser(user);
-        return "redirect:/admin/user";
+    // -----------------------------------------------------
+    // 5. DELETE /api/users/{id}: Xóa người dùng (DeleteUser)
+    // -----------------------------------------------------
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        this.userService.deleteUserById(id);
+        // Trả về 204 No Content (thành công nhưng không cần trả về dữ liệu)
+        return ResponseEntity.noContent().build();
     }
-
-    @GetMapping("/admin/user/delete/{id}")
-    public String getDeleteUserPage(Model model, @PathVariable long id) {
-        User user = this.userService.getUserById(id);
-        model.addAttribute("id", id);
-        model.addAttribute("user", user);
-        model.addAttribute("newUser", new User());
-        return "admin/user/delete";
-    }
-
-    @PostMapping("/admin/user/delete")
-    public String postDeleteUserPage(Model model, @ModelAttribute("newUser") User user) {
-        this.userService.deleteUserById(user.getId());
-        return "redirect:/admin/user";
-    }
-
 }

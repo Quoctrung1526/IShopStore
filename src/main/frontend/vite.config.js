@@ -12,15 +12,19 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    // Đảm bảo cấu hình proxy chính xác
     proxy: {
       '/api': {
-        target: 'http://localhost:9090',
+        target: 'http://localhost:9090', // <-- PHẢI LÀ CỔNG SPRING BOOT ĐANG CHẠY
         changeOrigin: true
       }
     }
   },
-  // Thêm dòng này để dev không bị lỗi khi reload
-  preview: {
-    port: 5173
+  // Cấu hình Build cho Spring Boot
+  build: {
+    outDir: '../../resources/static',
+    emptyOutDir: true,
+    minify: true,
+    assetsDir: 'assets',
   }
 })
