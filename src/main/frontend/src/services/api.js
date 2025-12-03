@@ -19,7 +19,6 @@ apiClient.interceptors.response.use(
 )
 
 export default {
-    // Products API
     products: {
         getAll(page = 0, size = 10, sortBy = 'id', sortDir = 'desc') {
             return apiClient.get('/products', {
@@ -60,7 +59,6 @@ export default {
         }
     },
 
-    // Categories API
     categories: {
         getAll() {
             return apiClient.get('/categories')
@@ -79,7 +77,6 @@ export default {
         }
     },
 
-    // Orders API (sẽ implement sau)
     orders: {
         getAll(page = 0, size = 10) {
             return apiClient.get('/orders', { params: { page, size } })
@@ -97,7 +94,6 @@ export default {
         }
     },
 
-    // Customers API (sẽ implement sau)
     customers: {
         getAll() {
             return apiClient.get('/customers')

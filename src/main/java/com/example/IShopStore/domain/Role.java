@@ -18,7 +18,7 @@ public class Role {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    private Long id;
     private String name;
     private String description;
 
@@ -29,21 +29,20 @@ public class Role {
     public Role() {
     }
 
-    @JsonCreator // <-- Hướng dẫn Jackson sử dụng constructor này
-    public Role(@JsonProperty("id") Long id) { // <-- Lấy giá trị từ trường "id" trong JSON
+    @JsonCreator
+    public Role(@JsonProperty("id") Long id) {
         this.id = id;
     }
 
-    // THÊM CONSTRUCTOR NHẬN NAME CHO ROLESERVICE
     public Role(String name) {
         this.name = name;
     }
 
-    public long getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(Long id) {
         this.id = id;
     }
 

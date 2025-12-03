@@ -10,7 +10,6 @@ import java.util.Optional; // Cần import
 @Repository
 public interface RoleRepository extends JpaRepository<Role, Long> {
 
-    // Đã sửa để trả về Optional<Role>
     Optional<Role> findByName(String name);
 
 }

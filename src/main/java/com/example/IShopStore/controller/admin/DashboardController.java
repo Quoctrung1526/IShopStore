@@ -7,15 +7,12 @@ import org.springframework.http.ResponseEntity;
 
 import java.util.Map;
 
-// Đổi sang @RestController và dùng đường dẫn API
 @RestController
 @RequestMapping("/api/admin/dashboard")
 public class DashboardController {
 
-    // GET /api/admin/dashboard
     @GetMapping
     public ResponseEntity<Map<String, Object>> getDashboardData() {
-        // Trả về dữ liệu Dashboard dưới dạng JSON
         Map<String, Object> data = Map.of(
                 "totalUsers", 150,
                 "totalProducts", 500,

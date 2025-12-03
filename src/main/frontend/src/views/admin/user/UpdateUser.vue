@@ -11,13 +11,11 @@
             <li class="breadcrumb-item active">Cập nhật (ID: {{ id }})</li>
         </ol>
 
-        <!-- Trạng thái Loading -->
         <div v-if="loadingInitial" class="text-center p-5">
             <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
             <p class="mt-2 text-muted">Đang tải thông tin người dùng...</p>
         </div>
 
-        <!-- Thông báo Alert -->
         <div v-if="alert.message" :class="`alert alert-${alert.type}`" role="alert">
             {{ alert.message }}
         </div>
@@ -29,7 +27,6 @@
             </div>
             <div class="card-body">
                 <form @submit.prevent="submitForm">
-                    <!-- Hàng 1: Tên đầy đủ & Email -->
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="inputName" class="form-label">Tên đầy đủ</label>
@@ -37,13 +34,11 @@
                         </div>
                         <div class="col-md-6">
                             <label for="inputEmail" class="form-label">Địa chỉ Email (Không thể thay đổi)</label>
-                            <!-- Email thường không được phép sửa đổi dễ dàng -->
                             <input v-model="form.email" type="email" class="form-control bg-light" id="inputEmail"
                                 readonly>
                         </div>
                     </div>
 
-                    <!-- Hàng 2: Mật khẩu (Chỉ thay đổi khi nhập vào) & Vai trò -->
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="inputPassword" class="form-label">Mật khẩu (Để trống nếu không muốn thay
@@ -60,7 +55,6 @@
                         </div>
                     </div>
 
-                    <!-- Hàng 3: Điện thoại & Địa chỉ -->
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="inputPhone" class="form-label">Số điện thoại</label>
@@ -72,7 +66,6 @@
                         </div>
                     </div>
 
-                    <!-- Hàng 4: Cập nhật Ảnh đại diện -->
                     <div class="row mb-4">
                         <div class="col-md-6">
                             <label for="inputAvatar" class="form-label">Cập nhật Ảnh đại diện</label>
@@ -82,13 +75,15 @@
                         <div class="col-md-6 d-flex align-items-end">
                             <div v-if="avatarPreview || form.avatarUrl">
                                 <span class="d-block mb-1 text-muted small">Ảnh hiện tại/Xem trước:</span>
-                                <img :src="avatarPreview || form.avatarUrl" alt="Avatar Preview" class="img-thumbnail"
+
+                                <img :src="avatarPreview || getAvatarUrl(form.avatarUrl)" alt="Avatar Preview"
+                                    class="img-thumbnail"
                                     style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%;">
+
                             </div>
                         </div>
                     </div>
 
-                    <!-- Các nút hành động -->
                     <button type="submit" class="btn btn-warning text-white" :disabled="loadingSubmit">
                         <i v-if="loadingSubmit" class="fas fa-spinner fa-spin me-1"></i>
                         <i v-else class="fas fa-save me-1"></i>
@@ -123,7 +118,7 @@ const form = reactive({
     fullName: '',
     email: '',
     password: '', // Chỉ gửi khi có giá trị
-    role: 'USER',
+    role: 'USER', // Khởi tạo thành chuỗi để khớp với <select>
     phone: '',
     address: '',
     avatarUrl: '' // URL ảnh cũ
@@ -133,6 +128,22 @@ const avatarPreview = ref(null);
 const loadingInitial = ref(true); // Loading khi tải dữ liệu ban đầu
 const loadingSubmit = ref(false); // Loading khi submit form
 const alert = reactive({ type: '', message: '' });
+
+const getAvatarUrl = (avatarPath) => {
+    if (!avatarPath) {
+        return 'https://placehold.co/100x100/007bff/FFFFFF/png?text=AVATAR';
+    }
+
+    if (avatarPath.startsWith('http')) {
+        return avatarPath;
+    }
+
+    const backendBase = "http://localhost:9090";
+    const cleanPath = avatarPath.startsWith('/') ? avatarPath.substring(1) : avatarPath;
+
+    // Ví dụ: http://localhost:9090/upload-images/ten_file.jpg
+    return `${backendBase}/${cleanPath}`;
+};
 
 // Methods
 const showAlert = (type, message) => {
@@ -155,7 +166,7 @@ const previewAvatar = (event) => {
 };
 
 const goBack = () => {
-    router.push(`/admin/users/${props.id}`); // Quay lại trang chi tiết
+    router.push(`/admin/users/${props.id}`);
 };
 
 const fetchUser = async (userId) => {
@@ -164,15 +175,17 @@ const fetchUser = async (userId) => {
         const response = await axios.get(`${API_BASE_URL}/api/users/${userId}`);
         const data = response.data;
 
-        // Điền dữ liệu vào form
         form.id = data.id;
         form.fullName = data.fullName;
         form.email = data.email;
-        form.role = data.role;
+
+        //Gán chuỗi tên vai trò để khớp với <select>
+        form.role = data.role ? data.role.name : 'USER';
+
         form.phone = data.phone || '';
         form.address = data.address || '';
         form.avatarUrl = data.avatarUrl;
-        form.password = ''; // Luôn để trống password khi tải dữ liệu
+        form.password = '';
 
     } catch (err) {
         showAlert('danger', `Lỗi tải dữ liệu: ${err.response?.data?.message || err.message}`);
@@ -182,7 +195,7 @@ const fetchUser = async (userId) => {
 };
 
 const submitForm = async () => {
-    // Validation: Mật khẩu chỉ cần validate nếu người dùng có nhập
+    //Mật khẩu chỉ cần validate nếu người dùng có nhập
     if (form.password && form.password.length < 6) {
         showAlert('warning', 'Mật khẩu mới tối thiểu 6 ký tự.');
         return;
@@ -190,16 +203,19 @@ const submitForm = async () => {
 
     loadingSubmit.value = true;
     try {
-        // 1. Chuẩn bị Payload
         const payload = {
             id: form.id,
             fullName: form.fullName,
             // KHÔNG GỬI EMAIL VÌ NÓ LÀ READONLY
             password: form.password || undefined, // Chỉ gửi password nếu có giá trị
-            role: form.role,
+
+            // Vì Form đang dùng chuỗi 'ADMIN'/'USER', chúng ta phải chuyển nó thành ID
+            role: {
+                id: form.role === 'ADMIN' ? 1 : 2
+            },
+
             phone: form.phone,
             address: form.address,
-            // Không cần gửi avatarUrl cũ, server sẽ tự xử lý
         };
 
         const fd = new FormData();
@@ -211,19 +227,17 @@ const submitForm = async () => {
             fd.append('avatar', avatarFile.value);
         }
 
-        // 2. Gửi Request PUT/PATCH (Giả sử Back-end dùng PUT)
+        //Gửi Request PUT/PATCH (Giả sử Back-end dùng PUT)
         await axios.put(`${API_BASE_URL}/api/users/${form.id}`, fd, {
-            headers: { 'Content-Type': 'multipart/form-data' },
         });
 
-        // 3. Xử lý thành công
         showAlert('success', `Cập nhật người dùng ID #${form.id} thành công.`);
 
         // Quay lại trang chi tiết
         setTimeout(() => goBack(), 1000);
 
     } catch (err) {
-        // 4. Xử lý lỗi API
+        //Xử lý lỗi API
         const msg = err?.response?.data?.message || err?.message || 'Có lỗi xảy ra, vui lòng thử lại.';
         showAlert('danger', msg);
     } finally {
@@ -232,12 +246,10 @@ const submitForm = async () => {
 };
 
 
-// Lifecycle Hooks
 onMounted(() => {
     fetchUser(props.id);
 });
 
-// Watch để tải lại dữ liệu nếu ID thay đổi
 watch(() => props.id, (newId) => {
     fetchUser(newId);
 });

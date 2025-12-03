@@ -30,11 +30,13 @@ public class UserService {
         return this.userRepository.findAll();
     }
 
-    public User getUserById(long id) {
-        return this.userRepository.findById(id);
+    public User getUserById(Long id) {
+        return this.userRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Không tìm thấy người dùng với ID: " + id));
     }
 
-    public void deleteUserById(long id) {
+    public void deleteUserById(Long id) {
         if (!this.userRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng để xóa.");
         }
@@ -43,23 +45,19 @@ public class UserService {
 
     public User handleSaveUser(User user) {
 
-        // 1. LẤY ID TỪ ĐỐI TƯỢNG ROLE TRANSIENT
-        if (user.getRole() != null && user.getRole().getId() != 0) {
-            Long roleId = user.getRole().getId();
-
-            // 2. TẢI ĐỐI TƯỢNG ROLE PERSISTENT (Đã lưu) TỪ DATABASE
+        Role roleFromPayload = user.getRole();
+        if (roleFromPayload != null && roleFromPayload.getId() != null && roleFromPayload.getId() > 0) {
+            Long roleId = roleFromPayload.getId();
+            // TẢI ĐỐI TƯỢNG ROLE PERSISTENT TỪ DATABASE
             Role existingRole = this.roleRepository.findById(roleId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
                             "Role ID không hợp lệ: " + roleId));
-
-            // 3. GÁN ĐỐI TƯỢNG PERSISTENT VÀO USER
             user.setRole(existingRole);
-        } else {
-            // Xử lý trường hợp role bị thiếu hoặc ID bằng 0
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Role ID bị thiếu.");
+        } else if (user.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Role ID bị thiếu khi tạo người dùng mới.");
         }
 
-        // 4. LƯU USER
+        // LƯU USER
         user = this.userRepository.save(user);
         System.out.println("Saved user: " + user);
         return user;

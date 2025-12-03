@@ -1,41 +1,54 @@
 package com.example.IShopStore.service;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
-import jakarta.servlet.ServletContext;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class UploadService {
-    private final ServletContext servletContext;
+    @Value("${file.upload-dir}")
+    private String uploadDir;
 
-    public UploadService(ServletContext servletContext) {
-        this.servletContext = servletContext;
-    }
-
-    public String handleSaveUploadFile(MultipartFile file, String targetForlder) {
-        String rootPath = this.servletContext.getRealPath("/resources/images");
-        String finalName = "";
-        try {
-            byte[] bytes = file.getBytes();
-            File dir = new File(rootPath + File.separator + targetForlder);
-            if (!dir.exists())
-                dir.mkdirs();
-            // Create the file on server
-            finalName = System.currentTimeMillis() + "-" + file.getOriginalFilename();
-            File serverFile = new File(dir.getAbsolutePath() + File.separator + finalName);
-            BufferedOutputStream stream = new BufferedOutputStream(
-                    new FileOutputStream(serverFile));
-            stream.write(bytes);
-            stream.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+    /**
+     * * @param file Tệp MultipartFile được tải lên.
+     * 
+     * @param subDirectory Thư mục con để lưu tệp (ví dụ: "avatar" hoặc "product").
+     * @return Đường dẫn URL tương đối (ví dụ: "/upload-images/ten_file.jpg").
+     */
+    public String handleSaveUploadFile(MultipartFile file, String subDirectory) {
+        if (file.isEmpty()) {
+            return null;
         }
-        return finalName;
+
+        try {
+            Path directory = Paths.get(uploadDir, subDirectory);
+            // TẠO THƯ MỤC NẾU CHƯA TỒN TẠI (QUAN TRỌNG)
+            if (!Files.exists(directory)) {
+                Files.createDirectories(directory);
+            }
+            // Tạo tên tệp duy nhất
+            String originalFilename = file.getOriginalFilename();
+            String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            String uniqueFilename = UUID.randomUUID().toString() + extension;
+
+            Path filePath = directory.resolve(uniqueFilename);
+
+            // Ghi tệp
+            Files.copy(file.getInputStream(), filePath);
+            return "/upload-images/" + subDirectory + "/" + uniqueFilename;
+
+        } catch (IOException e) {
+            System.err.println("LỖI GHI FILE: " + e.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Không thể lưu tệp đã tải lên. Lỗi hệ thống: " + e.getMessage());
+        }
     }
 }

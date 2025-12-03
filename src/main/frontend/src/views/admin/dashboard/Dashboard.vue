@@ -50,7 +50,6 @@
 <script>
 export default {
     name: 'Dashboard',
-    // Đã loại bỏ components: { Navbar, Sidebar, Footer }
     data() {
         return {
             statsCards: [
@@ -66,7 +65,6 @@ export default {
     },
     methods: {
         loadExternalScripts() {
-            // Tải Bootstrap và FontAwesome (Có thể chuyển sang AdminLayout nếu muốn)
             if (!document.querySelector('link[href*="bootstrap"]')) {
                 const bootstrap = document.createElement('link')
                 bootstrap.rel = 'stylesheet'
@@ -79,7 +77,6 @@ export default {
                 document.head.appendChild(fontawesome)
             }
 
-            // Tải Chart.js
             if (!window.Chart) {
                 const chartjs = document.createElement('script')
                 chartjs.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.js'
@@ -91,15 +88,12 @@ export default {
             }
         },
         createCharts() {
-            // Đảm bảo DOM đã cập nhật trước khi cố gắng truy cập $refs
             this.$nextTick(() => {
-                // Kiểm tra Chart.js đã load chưa
                 if (!window.Chart) return;
 
-                // Biểu đồ Doanh thu (Area Chart)
                 if (this.$refs.areaChart) {
                     const ctx1 = this.$refs.areaChart.getContext('2d')
-                    new window.Chart(ctx1, { // Dùng window.Chart để đảm bảo truy cập đúng
+                    new window.Chart(ctx1, {
                         type: 'line',
                         data: {
                             labels: ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'],
@@ -118,10 +112,9 @@ export default {
                     })
                 }
 
-                // Biểu đồ Đơn hàng (Bar Chart)
                 if (this.$refs.barChart) {
                     const ctx2 = this.$refs.barChart.getContext('2d')
-                    new window.Chart(ctx2, { // Dùng window.Chart để đảm bảo truy cập đúng
+                    new window.Chart(ctx2, {
                         type: 'bar',
                         data: {
                             labels: ['Quý 1', 'Quý 2', 'Quý 3', 'Quý 4'],

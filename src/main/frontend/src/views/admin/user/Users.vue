@@ -48,7 +48,6 @@
                                 <td>{{ user.fullName }}</td>
                                 <td>{{ user.email }}</td>
                                 <td>
-                                    <!-- ĐÃ SỬA: Truy cập user.role.name và sử dụng nó cho class -->
                                     <span v-if="user.role" class="badge"
                                         :class="user.role.name === 'ADMIN' ? 'bg-danger' : 'bg-secondary'">
                                         {{ user.role.name }}
@@ -56,24 +55,22 @@
                                     <span v-else class="badge bg-warning">N/A</span>
                                 </td>
                                 <td>
-                                    <img :src="user.avatarUrl ? user.avatarUrl : 'https://placehold.co/30x30/CCCCCC/FFFFFF/png?text=A'"
+
+                                    <img :src="getAvatarUrl(user.avatar) ? getAvatarUrl(user.avatar) : 'https://placehold.co/30x30/CCCCCC/FFFFFF/png?text=A'"
                                         alt="Avatar" class="rounded-circle"
                                         style="width: 30px; height: 30px; object-fit: cover;">
                                 </td>
                                 <td>
-                                    <!-- Nút Xem Chi tiết -->
                                     <router-link :to="{ name: 'DetailUser', params: { id: user.id } }"
                                         class="btn btn-sm btn-info me-1" title="Xem chi tiết">
                                         <i class="fas fa-eye"></i>
                                     </router-link>
 
-                                    <!-- Nút Sửa -->
                                     <router-link :to="{ name: 'UpdateUser', params: { id: user.id } }"
                                         class="btn btn-sm btn-warning me-1" title="Sửa thông tin">
                                         <i class="fas fa-edit"></i>
                                     </router-link>
 
-                                    <!-- Nút Xóa -->
                                     <router-link :to="{ name: 'DeleteUser', params: { id: user.id } }"
                                         class="btn btn-sm btn-danger" title="Xóa người dùng">
                                         <i class="fas fa-trash"></i>
@@ -95,24 +92,37 @@ import axios from 'axios';
 
 const router = useRouter();
 
-// Lấy API Base URL từ .env file (đã cấu hình để dùng proxy)
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
-// State
 const users = ref([]);
 const loading = ref(true);
 const error = ref(null);
 
-// Methods
+const getAvatarUrl = (avatarPath) => {
+    if (!avatarPath) {
+        return null;
+    }
+
+    if (avatarPath.startsWith('http')) {
+        return avatarPath;
+    }
+
+    const backendBase = "http://localhost:9090";
+
+    // Loại bỏ dấu '/' ở đầu avatarPath nếu có để tránh lỗi đường dẫn đôi
+    const cleanPath = avatarPath.startsWith('/') ? avatarPath.substring(1) : avatarPath;
+
+    return `${backendBase}/${cleanPath}`;
+};
+
+
 const fetchUsers = async () => {
     loading.value = true;
     error.value = null;
     try {
-        // Gọi API: /api/users (Vite Proxy chuyển hướng đến 9090)
         const response = await axios.get(`${API_BASE_URL}/api/users`);
         users.value = response.data;
     } catch (err) {
-        // Tối ưu hóa xử lý lỗi: cố gắng lấy thông báo lỗi từ Back-end
         const errorMessage =
             err.response?.data?.message ||
             `Lỗi HTTP: ${err.response?.status} - ${err.message}` ||
@@ -129,7 +139,6 @@ const goToAddUser = () => {
     router.push({ name: 'CreateUser' });
 };
 
-// Lifecycle Hook
 onMounted(() => {
     fetchUsers();
 });

@@ -11,13 +11,11 @@
             <li class="breadcrumb-item active">Xóa (ID: {{ id }})</li>
         </ol>
 
-        <!-- Trạng thái Loading -->
         <div v-if="loadingInitial" class="text-center p-5">
             <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
             <p class="mt-2 text-muted">Đang tải thông tin người dùng...</p>
         </div>
 
-        <!-- Trạng thái Lỗi -->
         <div v-else-if="error" class="alert alert-danger" role="alert">
             <h4 class="alert-heading">Lỗi!</h4>
             <p>{{ error }}</p>
@@ -26,12 +24,10 @@
             </button>
         </div>
 
-        <!-- Thông báo Alert -->
         <div v-if="alert.message" :class="`alert alert-${alert.type}`" role="alert">
             {{ alert.message }}
         </div>
 
-        <!-- Nội dung xác nhận xóa -->
         <div v-else class="card mb-4 border-danger shadow-sm">
             <div class="card-header bg-danger text-white">
                 <i class="fas fa-trash-alt me-1"></i>
@@ -59,13 +55,18 @@
                             </tr>
                             <tr>
                                 <th>Vai trò:</th>
-                                <td><span class="badge" :class="user.role === 'ADMIN' ? 'bg-danger' : 'bg-secondary'">{{
-                                    user.role }}</span></td>
+                                <td>
+                                    <span v-if="user.role && user.role.name" class="badge"
+                                        :class="user.role.name === 'ADMIN' ? 'bg-danger' : 'bg-secondary'">
+                                        {{ user.role.name }}
+                                    </span>
+                                    <span v-else class="badge bg-warning">N/A</span>
+                                </td>
                             </tr>
                         </table>
                     </div>
                     <div class="col-md-6 text-center">
-                        <img :src="user.avatarUrl ? user.avatarUrl : 'https://placehold.co/150x150/dc3545/FFFFFF/png?text=DELETE'"
+                        <img :src="getAvatarUrl(user.avatarUrl) || 'https://placehold.co/150x150/dc3545/FFFFFF/png?text=DELETE'"
                             alt="Avatar" class="img-thumbnail rounded-circle"
                             style="width: 150px; height: 150px; object-fit: cover;">
                         <p class="mt-2 text-danger">Người dùng sẽ bị xóa!</p>
@@ -101,14 +102,31 @@ const props = defineProps({
     id: { type: [String, Number], required: true }
 });
 
-// State
+
 const user = ref({});
 const loadingInitial = ref(true);
 const loadingSubmit = ref(false);
 const error = ref(null);
 const alert = reactive({ type: '', message: '' });
 
-// Methods
+const getAvatarUrl = (avatarPath) => {
+    if (!avatarPath) {
+        return null;
+    }
+
+    if (avatarPath.startsWith('http')) {
+        return avatarPath;
+    }
+
+    // Sử dụng port 9090 trực tiếp để tải tài nguyên tĩnh (đã cấu hình WebConfig)
+    const backendBase = "http://localhost:9090";
+    const cleanPath = avatarPath.startsWith('/') ? avatarPath.substring(1) : avatarPath;
+
+    // Giả định path từ DB là /upload-images/ten_file.jpg
+    return `${backendBase}/${cleanPath}`;
+};
+
+
 const showAlert = (type, message) => {
     alert.type = type;
     alert.message = message;
@@ -116,7 +134,7 @@ const showAlert = (type, message) => {
 };
 
 const goBack = () => {
-    router.push(`/admin/users/${props.id}`); // Quay lại trang chi tiết hoặc danh sách
+    router.push(`/admin/users/${props.id}`);
 };
 
 const fetchUser = async () => {
@@ -142,17 +160,12 @@ const deleteUser = async () => {
     try {
         // Gửi Request DELETE
         await axios.delete(`${API_BASE_URL}/api/users/${props.id}`);
-
-        // Xử lý thành công
         showAlert('success', `Đã xóa người dùng ID #${props.id} thành công. Đang chuyển hướng...`);
-
-        // Chuyển hướng về trang danh sách người dùng sau khi xóa thành công
         setTimeout(() => {
             router.push('/admin/users');
         }, 1500);
 
     } catch (err) {
-        // Xử lý lỗi API
         const msg = err?.response?.data?.message || err?.message || 'Có lỗi xảy ra khi xóa, vui lòng thử lại.';
         showAlert('danger', msg);
         loadingSubmit.value = false;
@@ -160,7 +173,6 @@ const deleteUser = async () => {
 };
 
 
-// Lifecycle Hooks
 onMounted(() => {
     fetchUser();
 });

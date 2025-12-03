@@ -1,15 +1,17 @@
 <template>
-    <Navbar />
+    <div>
+        <Navbar />
 
-    <div id="layoutSidenav">
-        <Sidebar />
+        <div id="layoutSidenav">
+            <Sidebar />
 
-        <div id="layoutSidenav_content">
-            <main>
-                <router-view></router-view>
-            </main>
-            <Footer />
+            <div id="layoutSidenav_content">
+                <main>
+                    <router-view></router-view>
+                </main>
+                <Footer />
 
+            </div>
         </div>
     </div>
 </template>

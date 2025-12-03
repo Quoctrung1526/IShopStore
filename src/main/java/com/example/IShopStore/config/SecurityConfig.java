@@ -23,31 +23,28 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // 1. Cấu hình CSRF: Vô hiệu hóa CSRF cho ứng dụng API RESTful
+                // Vô hiệu hóa CSRF cho ứng dụng API RESTful
                 .csrf(AbstractHttpConfigurer::disable)
 
-                // 2. Cấu hình CORS: Cho phép truy cập từ Vue.js (5173)
+                // Cấu hình CORS: Cho phép truy cập từ Vue.js (5173)
                 .cors(Customizer.withDefaults())
 
-                // 3. Phân quyền truy cập (Authorization)
+                // Phân quyền truy cập (Authorization)
                 .authorizeHttpRequests(auth -> auth
                         // Chỉ cho phép ADMIN truy cập các endpoint quản lý người dùng
                         .requestMatchers("/api/users/**").hasRole("ADMIN")
 
-                        // Cho phép tất cả truy cập vào các đường dẫn public, ví dụ: trang chủ Vue.js
+                        .requestMatchers("/upload-images/**").permitAll()
+
                         .requestMatchers("/", "/assets/**", "/index.html", "/favicon.ico").permitAll()
 
                         // Yêu cầu xác thực (login) cho tất cả các request khác
                         .anyRequest().authenticated())
-
-                // 4. Cấu hình cơ chế xác thực: Dùng HTTP Basic hoặc Form Login (tùy chọn của
-                // bạn)
                 .httpBasic(Customizer.withDefaults());
 
         return http.build();
     }
 
-    // Bean để cấu hình CORS chi tiết hơn, cần thiết khi tắt CSRF
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
@@ -61,10 +58,8 @@ public class SecurityConfig {
         return source;
     }
 
-    // <--- THÊM BEAN PASSWORD ENCODER TẠI ĐÂY --->
     @Bean
     public PasswordEncoder passwordEncoder() {
-        // Sử dụng BCryptPasswordEncoder là tiêu chuẩn công nghiệp
         return new BCryptPasswordEncoder();
     }
 }

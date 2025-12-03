@@ -11,7 +11,6 @@ import DeleteUser from '@/views/admin/user/DeleteUser.vue'
 
 const routes = [
 
-    // Định tuyến mặc định (Redirect)
     {
         path: '/',
         redirect: '/admin/dashboard'
@@ -24,7 +23,6 @@ const routes = [
         path: '/admin',
         component: AdminLayout,
         children: [
-            // Trang chủ (Dashboard)
             {
                 path: 'dashboard',
                 name: 'Dashboard',
@@ -32,9 +30,7 @@ const routes = [
                 meta: { title: 'Trang chủ' }
             },
 
-            // QUẢN LÝ NGƯỜI DÙNG
 
-            // 2.1. Danh sách Người dùng
             {
                 path: 'users',
                 name: 'User',
@@ -42,7 +38,6 @@ const routes = [
                 meta: { title: 'Quản lý Người dùng' },
             },
 
-            // 2.2. Thêm mới Người dùng
             {
                 path: 'users/createuser',
                 name: 'CreateUser',
@@ -50,7 +45,6 @@ const routes = [
                 meta: { title: 'Tạo Người dùng mới' }
             },
 
-            // 2.3. Xem Chi tiết Người dùng (Route động)
             {
                 path: 'users/:id',
                 name: 'DetailUser',
@@ -59,7 +53,6 @@ const routes = [
                 meta: { title: 'Chi tiết Người dùng' }
             },
 
-            // 2.4. Cập nhật Người dùng (Route động)
             {
                 path: 'users/:id/edit',
                 name: 'UpdateUser',
@@ -68,7 +61,6 @@ const routes = [
                 meta: { title: 'Cập nhật Người dùng' }
             },
 
-            // 2.5. Xóa Người dùng (Route động)
             {
                 path: 'users/:id/delete',
                 name: 'DeleteUser',
@@ -77,7 +69,6 @@ const routes = [
                 meta: { title: 'Xác nhận xóa Người dùng' }
             },
 
-            // QUẢN LÝ SẢN PHẨM
             {
                 path: 'products',
                 name: 'Products',
@@ -85,7 +76,6 @@ const routes = [
                 meta: { title: 'Sản phẩm' }
             },
 
-            // QUẢN LÝ ĐƠN HÀNG
             {
                 path: 'orders',
                 name: 'Orders',
