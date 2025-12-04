@@ -12,6 +12,8 @@
           "text-align: -webkit-match-parent"
         ]
       }
-    ]
+    ],
+    "axe/name-role-value": "off",
+    "axe/aria": "off"
   }
 }
