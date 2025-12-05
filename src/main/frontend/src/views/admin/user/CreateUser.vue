@@ -11,7 +11,8 @@
             <li class="breadcrumb-item active">Thêm mới</li>
         </ol>
 
-        <div v-if="loading" class="text-center p-5">
+        <!-- Loading khi tải Roles -->
+        <div v-if="loadingInitial" class="text-center p-5">
             <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
             <p class="mt-2 text-muted">Đang tải form và vai trò...</p>
         </div>
@@ -25,40 +26,48 @@
             <div class="card-body">
                 <form @submit.prevent="createUser">
 
-                    <div class="mb-3">
-                        <label for="fullName" class="form-label">Tên đầy đủ</label>
-                        <input type="text" class="form-control" id="fullName" v-model="user.fullName" required>
+                    <!-- HÀNG 1: Tên đầy đủ & Email -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="fullName" class="form-label">Tên đầy đủ</label>
+                            <input type="text" class="form-control" id="fullName" v-model="user.fullName" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="email" class="form-label">Địa chỉ Email</label>
+                            <input type="email" class="form-control" id="email" v-model="user.email" required>
+                        </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="email" class="form-label">Địa chỉ Email</label>
-                        <input type="email" class="form-control" id="email" v-model="user.email" required>
+                    <!-- HÀNG 2: Mật khẩu & Vai trò (Role) -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="password" class="form-label">Mật khẩu</label>
+                            <input type="password" class="form-control" id="password" v-model="user.password" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="role" class="form-label">Vai trò</label>
+                            <!-- selectedRoleId là ID của Role -->
+                            <select class="form-select" id="role" v-model="selectedRoleId" required>
+                                <option v-for="role in availableRoles" :key="role.id" :value="role.id">
+                                    {{ role.name }}
+                                </option>
+                            </select>
+                        </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Mật khẩu</label>
-                        <input type="password" class="form-control" id="password" v-model="user.password" required>
+                    <!-- HÀNG 3: Số điện thoại & Địa chỉ -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="phone" class="form-label">Số điện thoại</label>
+                            <input type="text" class="form-control" id="phone" v-model="user.phone">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="address" class="form-label">Địa chỉ</label>
+                            <input type="text" class="form-control" id="address" v-model="user.address">
+                        </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="role" class="form-label">Vai trò</label>
-                        <select class="form-select" id="role" v-model="selectedRoleId" required>
-                            <option v-for="role in availableRoles" :key="role.id" :value="role.id">
-                                {{ role.name }}
-                            </option>
-                        </select>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="phone" class="form-label">Số điện thoại</label>
-                        <input type="text" class="form-control" id="phone" v-model="user.phone">
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="address" class="form-label">Địa chỉ</label>
-                        <input type="text" class="form-control" id="address" v-model="user.address">
-                    </div>
-
+                    <!-- HÀNG 4: Avatar (File upload và Preview) -->
                     <div class="row mb-4">
                         <div class="col-md-6">
                             <label for="avatar" class="form-label">Ảnh đại diện</label>
@@ -96,6 +105,7 @@ import axios from 'axios';
 const router = useRouter();
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
+// Dữ liệu người dùng mới
 const user = ref({
     fullName: '',
     email: '',
@@ -105,29 +115,40 @@ const user = ref({
     role: null,
 });
 
+// NEW STATE for Avatar
 const avatarFile = ref(null);
 const avatarPreview = ref(null);
 
-const selectedRoleId = ref(null); // Bắt đầu là null
+// State cho việc chọn Role ID từ dropdown
+const selectedRoleId = ref(0); // <-- Đã đổi từ null sang 0 (Giá trị không hợp lệ)
 
-// Danh sách các vai trò có sẵn
+// Danh sách các vai trò có sẵn (Tải từ API)
 const availableRoles = ref([]);
 
-const loading = ref(true);
-const loadingSubmit = ref(false);
+const loadingInitial = ref(true); // <-- Đã đổi tên biến loading
+const loadingSubmit = ref(false); // Loading khi submit
 const error = ref(null);
 
+// NEW METHOD: Preview Avatar (Đã kiểm tra và tối ưu)
 const previewAvatar = (event) => {
-    const file = event.target.files[0];
+    // Đảm bảo event và files tồn tại
+    const file = event.target.files && event.target.files.length > 0 ? event.target.files[0] : null;
+
     avatarFile.value = file;
-    if (file) {
-        if (avatarPreview.value) URL.revokeObjectURL(avatarPreview.value);
-        avatarPreview.value = URL.createObjectURL(file);
-    } else {
+
+    if (avatarPreview.value) {
+        // Thu hồi URL cũ để tránh rò rỉ bộ nhớ
+        URL.revokeObjectURL(avatarPreview.value);
         avatarPreview.value = null;
+    }
+
+    if (file) {
+        // Tạo URL đối tượng mới để xem trước
+        avatarPreview.value = URL.createObjectURL(file);
     }
 };
 
+// NEW METHOD: Tải danh sách Roles từ Back-end
 const fetchAvailableRoles = async () => {
     error.value = null;
     try {
@@ -137,6 +158,7 @@ const fetchAvailableRoles = async () => {
         // Thiết lập ID Role mặc định là ID của USER hoặc ID đầu tiên
         if (availableRoles.value.length > 0) {
             const defaultUserRole = availableRoles.value.find(r => r.name === 'USER');
+            // Gán ID hợp lệ
             selectedRoleId.value = defaultUserRole ? defaultUserRole.id : availableRoles.value[0].id;
         }
 
@@ -144,14 +166,16 @@ const fetchAvailableRoles = async () => {
         error.value = 'Lỗi tải danh sách vai trò. Vui lòng kiểm tra API /api/roles.';
         console.error('Error fetching roles:', err);
     } finally {
-        loading.value = false;
+        loadingInitial.value = false;
     }
 };
 
+// Xử lý khi người dùng ấn nút Lưu
 const createUser = async () => {
     error.value = null;
-    if (!user.value.fullName || !user.value.email || !user.value.password || !selectedRoleId.value) {
-        alert('Vui lòng điền đầy đủ thông tin bắt buộc và chọn vai trò.');
+    // Basic validation
+    if (!user.value.fullName || !user.value.email || !user.value.password || !selectedRoleId.value || selectedRoleId.value <= 0) {
+        alert('Vui lòng điền đầy đủ thông tin bắt buộc và chọn vai trò hợp lệ.');
         return;
     }
 
@@ -165,19 +189,28 @@ const createUser = async () => {
             password: user.value.password,
             phone: user.value.phone,
             address: user.value.address,
+            // Gửi Role dưới dạng đối tượng { id: ... } để Jackson/JPA hiểu
             role: { id: selectedRoleId.value },
         };
 
+        // 2. Prepare FormData for Multipart request
         const fd = new FormData();
+        // Append user JSON data as a Blob
         const userBlob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
         fd.append('user', userBlob);
 
-        if (avatarFile.value) {
-            fd.append('avatar', avatarFile.value);
-        }
+        // ******* TẮT TẠM THỜI FILE UPLOAD ĐỂ CÔ LẬP LỖI 500 *******
+        // if (avatarFile.value) {
+        //     fd.append('avatar', avatarFile.value);
+        // }
+        // ******* HẾT TẮT TẠM THỜI *******
 
+
+        // 3. Send Request
+        // Dùng fd ngay cả khi chỉ chứa JSON blob
         await axios.post(`${API_BASE_URL}/api/users`, fd);
 
+        // Thông báo thành công và chuyển hướng
         alert('Thêm người dùng mới thành công!');
         router.push('/admin/users');
 
@@ -198,6 +231,7 @@ const goBack = () => {
     router.push('/admin/users');
 };
 
+// Lifecycle Hook
 onMounted(() => {
     fetchAvailableRoles();
 });

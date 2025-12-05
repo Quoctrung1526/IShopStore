@@ -19,7 +19,6 @@ public class UploadService {
 
     /**
      * * @param file Tệp MultipartFile được tải lên.
-     * 
      * @param subDirectory Thư mục con để lưu tệp (ví dụ: "avatar" hoặc "product").
      * @return Đường dẫn URL tương đối (ví dụ: "/upload-images/ten_file.jpg").
      */
